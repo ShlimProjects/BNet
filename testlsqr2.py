@@ -19,7 +19,7 @@ import time
 NN = 5
 rr = np.arange(0.1,1,0.1)
 m = 1
-N = 500
+N = 700
 dphi = 2
 beta = 0.0
 space = np.array([0,1,2,3])
@@ -56,7 +56,7 @@ def Lattice_new(inp,w,v,limits=space):
 
 
 def ConvLat_Inp(lat):
-    if np.all(lat == np.array([-1,-1])):
+    if np.all(lat == np.array([-1,-1])):  
         return 0
     elif np.all(lat == np.array([-1,1])):
         return 1

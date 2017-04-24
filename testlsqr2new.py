@@ -24,7 +24,7 @@ N = 800
 dphi = 2
 beta = 0.0
 space = np.array([0,1,2,3])
-NumCorr = 2
+NumCorr = 50
 #alpha2 = np.arange(0.1,10.0,0.05)
 CR = list()
 alpha2 = np.array([.587, .6, .5])
@@ -124,34 +124,87 @@ def ConvLatB(lat):
     Outlat[np.where(np.all(Nlat == np.array([1,1]),axis=1)==1)] = 3
 
     return Outlat
-      
 
-def Lattice_new(inp,w,v,limits=space):
-    Prob = Prb[inp]
-    Pnorm = (Prob/np.sum(Prob))
-    return np.random.choice(limits,p=Pnorm)
+def LatticeProp(lat,Prb):
+    
+    space = np.array([0,1,2,3])
+    RandC = np.zeros(len(lat)/2)
+    
+    #First Layer -- Convert to 2-space
+    Outlat = np.zeros((N/2),dtype='int32')
+    Nlat = lat.reshape((len(lat)/2,2))
+    
+    Outlat[np.where(np.all(Nlat == np.array([-1,-1]),axis=1)==1)] = 0
+    Outlat[np.where(np.all(Nlat == np.array([-1,1]),axis=1)==1)] = 1
+    Outlat[np.where(np.all(Nlat == np.array([1,-1]),axis=1)==1)] = 2
+    Outlat[np.where(np.all(Nlat == np.array([1,1]),axis=1)==1)] = 3    
+    
+    #Calculate Transition
+    ProbL1 = Prb[Outlat]
 
+    Pnorm1 = np.multiply(ProbL1,(1.0/np.sum(ProbL1,axis=1))[:,None])
+    for i in xrange(0,len(Outlat)):
+        RandC[i] = np.random.choice(space,p=Pnorm1[i])
 
-def ConvLat_Inp(lat):
-    if np.all(lat == np.array([-1,-1])):  
-        return 0
-    elif np.all(lat == np.array([-1,1])):
-        return 1
-    elif np.all(lat == np.array([1,-1])):
-        return 2
-    elif np.all(lat == np.array([1,1])):
-        return 3
+    #Convert to Regular lattice
+    TempLat = np.zeros(N)
+    
+    ind0 = np.multiply(np.where(RandC==0),2)
+    ind1 = np.multiply(np.where(RandC==1),2)
+    ind2 = np.multiply(np.where(RandC==2),2)
+    ind3 = np.multiply(np.where(RandC==3),2)
+    
+    TempLat[ind0]=-1
+    TempLat[np.add(ind0,1)]=-1
+    TempLat[np.add(ind1,1)]=1
+    TempLat[ind2]=1
+    TempLat[np.add(ind2,1)]=-1
+    TempLat[ind3]=1
+    TempLat[np.add(ind3,1)]=1
+    
+    #Convert TempLat to 2-space
+    Outlat2 = np.zeros((N/2),dtype='int32')
+    Nlat = np.zeros((len(TempLat)))
+    
+    Nlat[:-1] = TempLat[1:]
+    Nlat[-1] = TempLat[0]
+    Nlat = Nlat.reshape((len(TempLat)/2,2))
+    
+    Outlat2[np.where(np.all(Nlat == np.array([-1,-1]),axis=1)==1)] = 0
+    Outlat2[np.where(np.all(Nlat == np.array([-1,1]),axis=1)==1)] = 1
+    Outlat2[np.where(np.all(Nlat == np.array([1,-1]),axis=1)==1)] = 2
+    Outlat2[np.where(np.all(Nlat == np.array([1,1]),axis=1)==1)] = 3
+    
+    #Calculate Transition 2
+    ProbL2 = Prb[Outlat2]
 
-def ConvInp_Lat(inp):
-    if inp == 0:
-        return np.array([-1,-1])
-    elif inp == 1:
-        return np.array([-1,1])
-    elif inp == 2:
-        return np.array([1,-1])
-    elif inp == 3:
-        return np.array([1,1])
-
+    Pnorm2 = np.multiply(ProbL2,(1.0/np.sum(ProbL2,axis=1))[:,None])
+    for i in xrange(0,len(Outlat2)):
+        RandC[i] = np.random.choice(space,p=Pnorm2[i])
+        
+    #Convert to Output Lattice
+    Outlat3 = np.zeros(N)
+    Finlat = np.zeros(N)
+    
+    ind0 = np.multiply(np.where(RandC==0),2)
+    ind1 = np.multiply(np.where(RandC==1),2)
+    ind2 = np.multiply(np.where(RandC==2),2)
+    ind3 = np.multiply(np.where(RandC==3),2)
+    
+    Outlat3[ind0]=-1
+    Outlat3[np.add(ind0,1)]=-1
+    Outlat3[ind1]=-1
+    Outlat3[np.add(ind1,1)]=1
+    Outlat3[ind2]=1
+    Outlat3[np.add(ind2,1)]=-1
+    Outlat3[ind3]=1
+    Outlat3[np.add(ind3,1)]=1    
+    
+    Finlat[1:] = Outlat3[:-1]
+    Finlat[0] = Outlat3[-1] 
+    
+    return Finlat
+    
 alpha = 0.6
 beta = 0.0
 L = np.zeros((4,4))
@@ -278,6 +331,11 @@ while pp < NN:
     """
     t2 = time.time()
     
+    ttime = time.time()
+    for i in xrange(1,N):
+      lattice[i] = LatticeProp(lattice[i-1],Prb)
+    ttime2 = time.time()
+    print ttime2-ttime
     """
     Corr = np.zeros(NumCorr)
     
